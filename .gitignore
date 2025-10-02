@@ -1,0 +1,15 @@
+# Large / generated
+data/
+datasets/
+checkpoints/
+weights/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.npz
+*.zip
+*.tar
+*.tar.gz
+__pycache__/
+*.ipynb_checkpoints
