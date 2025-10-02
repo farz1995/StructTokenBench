@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 import torch.distributed as dist
 from src.baselines.wrapped_myrep import MissingRepresentation
-from src.tokenizers import WrappedMyRepTokenizer
+from src.stb_tokenizers import WrappedMyRepTokenizer
 from sklearn.model_selection import train_test_split
 
 from protein_chain import WrappedProteinChain
