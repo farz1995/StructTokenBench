@@ -9,14 +9,109 @@ from importlib import import_module
 
 from tqdm import tqdm
 
+def _build_or_get_45class_map(self, dataset, split):
+    """
+    Build a 45-class mapping on TRAIN, reuse it for VALID/TEST.
+    Produces:
+      - self._label_keep_set: set of old fold labels kept
+      - self._label_remap:    dict old_label -> new_label (0..44)
+      - self.num_labels_for_model = 45
+    """
+    from collections import Counter
+    import os, torch
+
+    # if already built (from train), reuse
+    if hasattr(self, "_label_keep_set") and hasattr(self, "_label_remap"):
+        return self._label_keep_set, self._label_remap
+
+    assert split == "train", "45-class map must be built on train split first."
+
+    # 1) collect all fold labels in train
+    train_labels = [int(s["fold_label"]) for s in dataset.data if "fold_label" in s]
+
+    # 2) choose which 45 to keep
+    # Option A: user-specified list via Hydra: +data.fold_allowlist=[...] (exactly 45 ints)
+    allow = getattr(self, "fold_allowlist", None)
+    if allow:
+        keep = list(map(int, allow))
+        assert len(keep) == 45, "fold_allowlist must contain exactly 45 labels"
+    else:
+        # Option B: pick the 45 most frequent folds in TRAIN
+        counts = Counter(train_labels).most_common(45)
+        keep = [lab for lab, _ in counts]
+
+    # 3) make a stable mapping old -> new (sorted then enumerate)
+    keep_sorted = sorted(keep)
+    remap = {old: new for new, old in enumerate(keep_sorted)}
+
+    # 4) stash for later splits and for logging
+    self._label_keep_set = set(keep_sorted)
+    self._label_remap = remap
+    self.num_labels_for_model = 45
+
+    # (optional) save mapping to disk so VALID/TEST workers can reuse
+    if hasattr(self, "save_dir_path") and self.save_dir_path:
+        os.makedirs(self.save_dir_path, exist_ok=True)
+        torch.save(
+            {"keep": keep_sorted, "map": remap},
+            os.path.join(self.save_dir_path, "fold45_map.pt"),
+        )
+
+    return self._label_keep_set, self._label_remap
+
+
+def _apply_45class_filter_and_remap(self, dataset, split):
+    """
+    Filter samples not in the kept folds and remap kept labels to 0..44.
+    Returns the modified dataset.
+    """
+    import os, torch
+
+    # load or build mapping
+    if hasattr(self, "_label_keep_set") and hasattr(self, "_label_remap"):
+        keep_set, remap = self._label_keep_set, self._label_remap
+    else:
+        # try to load saved mapping (if VALID/TEST is constructed first by any chance)
+        mapping_path = getattr(self, "save_dir_path", None)
+        if mapping_path:
+            mapping_path = os.path.join(mapping_path, "fold45_map.pt")
+        if mapping_path and os.path.isfile(mapping_path):
+            obj = torch.load(mapping_path, map_location="cpu")
+            keep_set = set(obj["keep"])
+            remap = obj["map"]
+            self._label_keep_set, self._label_remap = keep_set, remap
+            self.num_labels_for_model = 45
+        else:
+            # build now (will assert split == "train")
+            keep_set, remap = self._build_or_get_45class_map(dataset, split)
+
+    # filter + remap
+    clean = []
+    drop = 0
+    for s in dataset.data:
+        old = int(s["fold_label"])
+        if old in keep_set:
+            s["fold_label"] = remap[old]  # now 0..44
+            clean.append(s)
+        else:
+            drop += 1
+    dataset.data = clean
+    msg = f"[45-class] split={split}: kept {len(clean)}, dropped {drop}"
+    try:
+        self.py_logger.info(msg)
+    except Exception:
+        print(msg)
+
+    return dataset
+
 
 def load_class(qualname: str):
     """Resolve both fully-qualified and bare class names."""
     if "." in qualname:
         mod, cls = qualname.rsplit(".", 1)
         return getattr(import_module(mod), cls)
-    # bare name -> try src.tokenizers.<Name>
-    import src.tokenizers as T
+    # bare name -> try src.stb_tokenizers.<Name>
+    import src.stb_tokenizers as T
     return getattr(T, qualname)
 
 
@@ -72,7 +167,7 @@ class ProteinDataModule(pl.LightningDataModule):
     #         # all Wrapped tokenizers deal with loading logic inside __init__() when built up
     #         # assume only this type of tokenizer needs to be device aware
     #         tokenizer = eval(self.tokenizer_name)(device=device, **self.tokenizer_kwargs)
-    #     elif self.tokenizer_name in ["WrappedMyRepTokenizer", "src.tokenizers.WrappedMyRepTokenizer"]:
+    #     elif self.tokenizer_name in ["WrappedMyRepTokenizer", "src.stb_tokenizers.WrappedMyRepTokenizer"]:
     #         tokenizer = eval(self.tokenizer_name)(device=device, **self.tokenizer_kwargs)
     #     else:
     #         raise NotImplementedError
@@ -92,7 +187,7 @@ class ProteinDataModule(pl.LightningDataModule):
 
         kwargs = dict(self.tokenizer_kwargs or {})
         Tok = load_class(
-            self.tokenizer_name)  # <-- now resolves both "WrappedMyRepTokenizer" and "src.tokenizers.WrappedMyRepTokenizer"
+            self.tokenizer_name)  # <-- now resolves both "WrappedMyRepTokenizer" and "src.stb_tokenizers.WrappedMyRepTokenizer"
         tokenizer = Tok(device=device, **kwargs)
         return tokenizer
 
