@@ -9,7 +9,7 @@ import numpy as np
 
 from tape.datasets import RemoteHomologyDataset
 from dataset.base import BaseDataset
-from src.stb_tokenizers import WrappedMyRepTokenizer
+from src.stb_tokenizers import WrappedMyRepTokenizer, MissingRepresentation
 from src.baselines.wrapped_myrep import MissingRepresentation
 
 class TapeRemoteHomologyDataset(RemoteHomologyDataset, BaseDataset):
