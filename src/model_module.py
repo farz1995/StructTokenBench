@@ -481,6 +481,10 @@ class PlModel(pl.LightningModule):
         self._last_logged_batch_start_time = time.monotonic()
 
     def training_step(self, batch, batch_idx):
+
+        if batch is None:
+            # skip this step; return a dummy zero loss so PL won't crash
+            return {"loss": torch.tensor(0.0, device=self.device, requires_grad=True)}
         outputs = self.model(batch["input_list"], batch["targets"])
         loss, metrics = outputs[0]
 
@@ -525,6 +529,8 @@ class PlModel(pl.LightningModule):
         torch.cuda.empty_cache()
 
     def _valid_or_test_step(self, batch, batch_idx, split="validation"):
+        if batch is None:
+            return None
         outputs = self.model(batch["input_list"], batch["targets"])
         loss, metrics = outputs[0]
 
@@ -558,7 +564,10 @@ class PlModel(pl.LightningModule):
         split = self.all_split_names[dataloader_idx]
         outputs = self._valid_or_test_step(batch, batch_idx, split=split)
         getattr(self, f"{split}_step_outputs").append(outputs)
-        return outputs
+        if batch is None:
+            return None
+        return self._valid_or_test_step(batch, batch_idx, split="validation")
+        # return outputs
 
     def on_train_start(self):
         # override the lambda schedulers

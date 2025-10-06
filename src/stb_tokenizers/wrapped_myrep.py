@@ -80,7 +80,7 @@ class WrappedMyRepTokenizer:
         return self
 
     def get_num_tokens(self):
-        return None  # continuous features → no discrete vocab
+        return None  # continuous features ? no discrete vocab
 
     def get_codebook_embedding(self):
         return None  # continuous features
@@ -129,7 +129,7 @@ class WrappedMyRepTokenizer:
             feats = torch.from_numpy(arr).to(torch.float32)
             # Optional: sanity-check width
             if feats.dim() == 2 and feats.shape[1] != self.d_model:
-                # Donâ€™t crashâ€”just warn once per pdb_id
+                # Don’t crash—just warn once per pdb_id
                 if (pdb_id, "DIM") not in self._warned:
                     print(f"[MyRep] WARNING: d_model mismatch for {pdb_id}: "
                           f"H5 has {feats.shape[1]}, requested {self.d_model}. Using H5 width.")
@@ -172,7 +172,7 @@ class WrappedMyRepTokenizer:
                 self._warned.add((pdb_id, chain_up))
             return _as_triplet(h5[chosen][()])
 
-        # 4) no match â†’ helpful error
+        # 4) no match → helpful error
         candidates = [k for k in h5.keys() if k == pdb_id or k.startswith(prefix)]
         raise KeyError(
             f"No H5 key found for pdb='{pdb_id}', chain='{chain_up}'. "
