@@ -13,6 +13,7 @@ from dataset.cath import CATHLabelMappingDataset
 import json
 
 from tokenizer import *
+from stb_tokenizers.wrapped_myrep import WrappedMyRepTokenizer
 
 
 class CASP14Dataset(BaseDataset):
@@ -124,7 +125,13 @@ class CASP14Dataset(BaseDataset):
         elif isinstance(self.tokenizer, (WrappedFoldSeekTokenizer, WrappedAIDOTokenizer, WrappedProTokensTokenizer)):
             token_ids, residue_index, seqs = self.tokenizer.encode_structure(pdb_path, chain_id, self.use_continuous, self.use_sequence)
         elif isinstance(self.tokenizer, WrappedOurPretrainedTokenizer):
-            token_ids, residue_index, seqs = self.tokenizer.encode_structure(pdb_chain, self.use_continuous, self.use_sequence) # torch.Tensors
+            token_ids, residue_index, seqs = self.tokenizer.encode_structure(pdb_chain, self.use_continuous, self.use_sequence)
+        elif isinstance(self.tokenizer, WrappedMyRepTokenizer):
+            # <-- add this block
+            token_ids, residue_index, seqs = self.tokenizer.encode_structure(
+                pdb_path, chain_id, self.use_sequence
+        )
+        # torch.Tensors
         else:
             raise NotImplementedError
         assert len(token_ids) == len(residue_index)

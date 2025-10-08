@@ -189,6 +189,10 @@ class ProteinDataModule(pl.LightningDataModule):
         Tok = load_class(
             self.tokenizer_name)  # <-- now resolves both "WrappedMyRepTokenizer" and "src.stb_tokenizers.WrappedMyRepTokenizer"
         tokenizer = Tok(device=device, **kwargs)
+        # Tok = load_class(self.cfg.tokenizer_module, self.cfg.tokenizer)
+        # kwargs = dict(self.cfg.tokenizer_kwargs or {})
+        # tokenizer = Tok(device=device, **kwargs)
+        self.tokenizer = tokenizer  # <-- add this line
         return tokenizer
 
 
@@ -227,13 +231,23 @@ class ProteinDataModule(pl.LightningDataModule):
         })
         dataset = eval(self.data_args.data_name)(**kwargs)
 
+        # ------- Remote Homology: enforce 45-class mapping BEFORE sharding -------
+        try:
+            from dataset.tape_remote_homology import TapeRemoteHomologyDataset
+            is_rh = isinstance(dataset, TapeRemoteHomologyDataset) and getattr(dataset, "target_field", "") == "fold_label"
+        except Exception:
+            is_rh = False
+        if is_rh:
+            # Build (on train) and/or load mapping, then filter + remap to 0..44
+            if split == "train":
+                _build_or_get_45class_map(self, dataset, split)
+            dataset = _apply_45class_filter_and_remap(self, dataset, split)
+            # downstream consumers may consult this
+            setattr(self, "num_labels_for_model", 45)
+
         # ------- detect tokenizer type -------
         tok = self.get_tokenizer()
         is_continuous = (getattr(tok, "get_num_tokens", lambda: None)() is None)
-
-        # ------- IMPORTANT: remove earlier "my code" filter -------
-        # Don't pre-filter samples by presence of 'token_ids' for continuous reps.
-        # The dataset's __getitem__ will call the tokenizer to produce features on the fly.
 
         # ------- shard dataset -------
         assert torch.distributed.is_initialized()

@@ -230,14 +230,15 @@ class BaseDataset(Dataset):
         B = len(normed)
 
         feats = torch.zeros((B, Lmax, D), dtype=torch.float32)
-        attn  = torch.zeros((B, Lmax), dtype=torch.bool)
+        # attention mask semantics: True = padding, False = real token
+        attn  = torch.ones((B, Lmax), dtype=torch.bool)
         resid = torch.zeros((B, Lmax), dtype=torch.int32)
         labels = torch.zeros((B,), dtype=torch.long)
 
         for i, it in enumerate(normed):
             x = it["token_ids"]; L = x.shape[0]
             feats[i, :L] = x
-            attn[i, :L] = True
+            attn[i, :L] = False  # mark real tokens as not-masked
             if "residue_index" in it and it["residue_index"] is not None:
                 ri = it["residue_index"]
                 if not torch.is_tensor(ri):
@@ -252,7 +253,7 @@ class BaseDataset(Dataset):
         #  Keys expected by your model:
         input_list = [{
             "token_ids": feats,            # (B, Lmax, D)
-            "attention_mask": attn,        # (B, Lmax) bool
+            "attention_mask": attn,        # (B, Lmax) bool, True=pad, False=token
             "residue_index": resid,        # (B, Lmax) int32
         }]
         out = {
@@ -742,8 +743,3 @@ class BaseDataset(Dataset):
         fold_test_data = [self.data[idx] for idx in fold_test_indices]
         superfamily_test_data = [self.data[idx] for idx in superfamily_test_indices]
         return train_data, valid_data, fold_test_data, superfamily_test_data
-
-    
-
-    
-
