@@ -1,0 +1,13 @@
+- tokenizer=WrappedMyRepTokenizer
+- model.d_model=256
+- trainer.devices=[0]
+- data.target_field=tm_score
+- experiment_name=conformational_myrep
+- run_name=tryout_test
+- default_data_dir=/home/fe5vb/project/PST/struct_token_bench_release_data/
+- data.pdb_data_dir=/home/fe5vb/project/PST/pdb_data/mmcif_files/
+- trainer.default_root_dir=/home/fe5vb/project/PST/struct_token_bench_logs/
+- test_only=true
+- experiment_name=conformational_myrep
+- tokenizer_pretrained_ckpt_path=/home/fe5vb/project/PST/StructTokenBench/src/vq_embed.h5
+- tokenizer_ckpt_name=myrep

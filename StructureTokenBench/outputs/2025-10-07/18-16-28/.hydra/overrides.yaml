@@ -1,0 +1,9 @@
+- tokenizer=stb_tokenizers.wrapped_myrep.WrappedMyRepTokenizer
+- default_data_dir=/home/.../struct_token_bench_release_data/data/utility
+- model.task_goal=codebook_utilization
+- test_only=true
+- +tokenizername=myrep
+- precompute_tokens=true
+- tokenizer_device=cuda
+- +tokenizer_kwargs.h5_path=/home/.../vq_embed_casp_14.h5
+- +tokenizer_kwargs.chain_alias_json=/home/.../casp14_chain_aliases.json

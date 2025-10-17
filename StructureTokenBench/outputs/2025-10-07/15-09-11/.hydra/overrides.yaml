@@ -1,0 +1,13 @@
+- tokenizer=WrappedMyRepTokenizer
+- default_data_dir=/home/fe5vb/project/PST/struct_token_bench_release_data/data/utility/casp14/data_dir/
+- model.task_goal=codebook_utilization
+- test_only=true
+- optimization.micro_batch_size=8
+- trainer.devices=[0]
+- trainer.default_root_dir=/home/fe5vb/project/PST/struct_token_bench_logs
+- run_name=myrep_casp14_util
+- +tokenizername=myrep
+- +trainer.strategy=auto
+- +optimization.use_deepspeed=false
+- +optimization.zero_optimization.enabled=false
+- +trainer.plugins=[]

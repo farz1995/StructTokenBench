@@ -1,0 +1,9 @@
+- tokenizer=WrappedMyRepTokenizer
+- model.d_model=256
+- optimization.micro_batch_size=64
+- default_data_dir=/abs/path/to/struct_token_bench_release_data
+- data.pdb_data_dir=/abs/path/to/pdb_data/mmcif_files
+- data.target_field=fold_label
+- trainer.devices=[0]
+- experiment_name=homo_myrep
+- run_name=tryout

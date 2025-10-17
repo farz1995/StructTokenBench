@@ -1,0 +1,11 @@
+- tokenizer=WrappedFoldSeekTokenizer
+- model.d_model=2
+- trainer.devices=[0]
+- data.target_field=tm_score
+- experiment_name=conformational_foldseek
+- run_name=tryout_test
+- default_data_dir=/struct_token_bench_release_data/
+- data.pdb_data_dir=/pdb_data/mmcif_files/
+- trainer.default_root_dir=/struct_token_bench_logs/
+- test_only=true
+- experiment_name=conformational_foldseek

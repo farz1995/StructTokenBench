@@ -1,0 +1,11 @@
+- tokenizer=WrappedProteinMPNNTokenizer
+- model.d_model=128
+- trainer.devices=[0]
+- optimization.optimizer.lr=0.001
+- optimization.micro_batch_size=8
+- data.target_field=binding_label
+- default_data_dir=/home/fe5vb/project/PST/struct_token_bench_release_data/
+- data.pdb_data_dir=/home/fe5vb/project/PST/pdb_data/mmcif_min//
+- trainer.default_root_dir=/home/fe5vb/project/PST/struct_token_bench_logs/
+- experiment_name=bindbio_proteinmpnn_lr0.001
+- run_name=tryout

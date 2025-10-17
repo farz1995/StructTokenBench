@@ -13,3 +13,16 @@ weights/
 *.tar.gz
 __pycache__/
 *.ipynb_checkpoints
+.idea/
+CATH_data/
+conformational_pdb_ids.txt
+convert_structured_to_lmdb.py
+make_45_from_full_lmdb.py
+missing_train_valid_pairs.csv
+pdb_chain_pairs_train_valid.csv
+pdb_data/
+pdb_ids.txt
+pdb_ids_train_valid_remote_hemology.txt
+readme.txt
+struct_token_bench_logs/
+test.py

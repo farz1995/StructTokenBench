@@ -1,0 +1,11 @@
+- tokenizer=WrappedFoldSeekTokenizer
+- model.d_model=2
+- trainer.devices=[0]
+- optimization.optimizer.lr=0.001
+- data.target_field=tm_score
+- default_data_dir=/home/fe5vb/project/PST/struct_token_bench_release_data/
+- data.pdb_data_dir=/home/fe5vb/project/PST/pdb_data/mmcif_min/
+- trainer.default_root_dir=/home/fe5vb/project/PST/struct_token_bench_logs/
+- experiment_name=conformational_foldseek
+- run_name=sensitivity_test
+- test_only=true

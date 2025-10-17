@@ -1,0 +1,14 @@
+- tokenizer=stb_tokenizers.wrapped_myrep.WrappedMyRepTokenizer
+- +tokenizername=myrep
+- +tokenizer_kwargs.h5_path=/home/fe5vb/project/PST/StructTokenBench/src/codebooks_embeddings_indices.h5
+- +tokenizer_kwargs.codebook_in_h5=true
+- +tokenizer_kwargs.codebook_dataset=/codebook
+- default_data_dir=/home/fe5vb/project/PST/struct_token_bench_release_data
+- data.pdb_data_dir=/home/fe5vb/project/PST/pdb_data/mmcif_files
+- trainer.default_root_dir=/home/fe5vb/project/PST/struct_token_bench_logs
+- trainer.accelerator=gpu
+- trainer.devices=[0]
+- model.d_model=256
+- model.task_goal=codebook_diversity
+- test_only=true
+- optimization.micro_batch_size=1

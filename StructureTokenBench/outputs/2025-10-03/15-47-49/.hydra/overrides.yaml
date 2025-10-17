@@ -1,0 +1,13 @@
+- tokenizer=WrappedMyRepTokenizer
+- model.d_model=256
+- optimization.micro_batch_size=1
+- data.target_field=fold_label
+- default_data_dir=/home/fe5vb/project/PST/struct_token_bench_release_data
+- data.pdb_data_dir=/home/fe5vb/project/PST/pdb_data/mmcif_files
+- trainer.devices=[0]
+- trainer.max_steps=1
+- trainer.limit_train_batches=1
+- trainer.num_sanity_val_steps=0
+- trainer.default_root_dir=/home/fe5vb/project/PST/struct_token_bench_logs
+- experiment_name=homo_myrep
+- run_name=debug_step
