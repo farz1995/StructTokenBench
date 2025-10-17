@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modelgenerator"
+version = "0.1.1-5"
+description = "AIDO.ModelGenerator is a software stack powering the development of an AI-driven Digital Organism by enabling researchers to adapt pretrained models and generate finetuned models for downstream tasks."
+readme = "README.md"
+authors = [
+    { name = "GenBio AI" },
+    { name = "Caleb Ellington", email = "caleb.ellington@genbio.ai" },
+    { name = "Dian Li", email = "dian.li@genbio.ai" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "genbio",
+    "foundation models",
+    "finetuning",
+    "machine learning",
+]
+dependencies = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "transformers==4.38.0",
+    "datasets",
+    "packaging",
+    "bitsandbytes",
+    "scipy",
+    "scikit-learn",
+    "wandb",
+    "pandas",
+    "pyfaidx",
+    "peft<=0.13.2",  # Dec 6 2024 release breaks EncoderDecoderCache from transformers
+    "torchmetrics>=1.5.0",
+    "lightning>=2.4.0",
+    "black",
+    "jsonargparse[signatures]>=4.26.1",
+    "awscli",
+    "openfold @ git+https://github.com/genbio-ai/openfold.git@c4aa2fd0d920c06d3fd80b177284a22573528442",
+    "dllogger @ git+https://github.com/NVIDIA/dllogger.git@0540a43971f4a8a16693a9de9de73c1072020769",
+    "biotite",
+    "einops>=0.8.0",
+    "ml-collections>=1.0.0",
+    "dm-tree>=0.1.8",
+    "biopython>=1.84",
+    "omegaconf>=2.3.0",
+    "anndata",
+]
+requires-python = ">=3.10,<3.12"
+
+[project.scripts]
+mgen = "modelgenerator.main:cli_main"
+mgen-hf = "modelgenerator.huggingface_models.utils:hf_cli_main"
+
+[tool.hatch.build.targets.wheel]
+package = ["modelgenerator"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project.urls]
+"Homepage" = "https://genbio-ai.github.io/ModelGenerator"
+"Source" = "https://github.com/genbio-ai/ModelGenerator"

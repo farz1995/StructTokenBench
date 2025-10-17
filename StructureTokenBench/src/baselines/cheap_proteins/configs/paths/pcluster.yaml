@@ -1,0 +1,12 @@
+##### replace these paths with paths from your machine: #####
+
+
+root_dir: /directory/where/artifacts/are/stored
+data_dir: /path/to/data/dir
+log_dir: /path/to/logs/dir
+project_dir: /path/to/project/code
+
+checkpoint_dir: ${paths.root_dir}/checkpoints
+artifacts_dir: ${paths.root_dir}/artifacts
+
+entity: your-wandb-username-here

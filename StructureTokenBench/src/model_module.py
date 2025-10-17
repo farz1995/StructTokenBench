@@ -659,10 +659,16 @@ class PlModel(pl.LightningModule):
                 # assign to the already-registered buffer (no re-registration!)
                 self.codebook_embedding = cb
             else:
-                raise RuntimeError(
-                    "codebook_embedding is empty. Datamodule must expose `tokenizer.codebook` "
-                    "(e.g., from '/codebook' in the H5)."
-                )
+                # Check if this is a continuous tokenizer (no discrete codebook needed)
+                is_continuous = getattr(dm, "get_tokenizer", lambda: None)()
+                if is_continuous is not None and not hasattr(is_continuous, "codebook"):
+                    # Continuous tokenizer (e.g., H5 features) - no codebook needed
+                    self.codebook_embedding = torch.tensor([])  # empty placeholder
+                else:
+                    raise RuntimeError(
+                        "codebook_embedding is empty. Datamodule must expose `tokenizer.codebook` "
+                        "(e.g., from '/codebook' in the H5)."
+                    )
 
         # timing, etc.
         self._last_logged_batch_start_time = time.monotonic()
