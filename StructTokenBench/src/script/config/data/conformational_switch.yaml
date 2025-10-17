@@ -1,0 +1,12 @@
+num_workers: 0
+prefetch_factor: null
+data_path: ${..default_data_dir}/data/sensitivity
+data_name: ConformationalSwitchDataset
+target_field: "tm_score"
+filter_length: 600
+truncation_length: 5000
+multi_label: false
+is_global_or_local: "global"
+pdb_data_dir: null # Required
+use_continuous: false
+use_sequence: false

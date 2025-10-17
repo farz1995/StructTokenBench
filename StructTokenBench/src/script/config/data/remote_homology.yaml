@@ -1,0 +1,13 @@
+num_workers: 0
+prefetch_factor: null
+data_path: ${..default_data_dir}/data/structural/
+data_name: TapeRemoteHomologyDataset
+target_field: "fold_label"
+filter_length: 600
+truncation_length: 5000
+multi_label: false
+is_global_or_local: "global"
+pdb_data_dir: null # Required
+fast_dev_run: false
+use_continuous: false
+use_sequence: false
