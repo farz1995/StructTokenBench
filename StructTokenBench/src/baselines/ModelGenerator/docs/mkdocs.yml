@@ -1,0 +1,97 @@
+site_name: AIDO.ModelGenerator
+site_url: https://genbio-ai.github.io/ModelGenerator/
+site_author: GenBio AI
+site_description: AIDO.ModelGenerator is a software stack powering the development of an AI-driven Digital Organism by enabling researchers to adapt pretrained models and generate finetuned models for downstream tasks.
+copyright: All rights reserved &copy; 2024-Present, GenBio AI
+
+repo_name: AIDO.ModelGenerator
+repo_url: https://github.com/genbio-ai/ModelGenerator
+
+nav:
+  - index.md
+  - quick_start.md
+  - Basic Usage:
+    - usage/index.md
+    - usage/saving_outputs.md
+    - usage/exporting_models.md
+    - usage/reproducing_experiments.md
+  - Tutorials:
+    - tutorials/kfold_cross_validation.md
+    - tutorials/finetuning_scheduler.md
+    - tutorials/dependency_mapping.md
+    - tutorials/zeroshot.md
+    - tutorials/structure_tokenizer.md
+    - tutorials/protein_inverse_folding.md
+    - tutorials/rna_inverse_folding.md
+    - tutorials/rna_secondary_structure_prediction.md
+  - Experiment Design:
+    - experiment_design/index.md
+    - experiment_design/backbones.md
+    - experiment_design/tasks.md
+    - experiment_design/data.md
+    - experiment_design/datafiles.md
+  - API Reference:
+    - api_reference/backbones.md
+    - api_reference/tasks.md
+    - api_reference/adapters.md
+    - api_reference/data.md
+    - api_reference/callbacks.md
+
+plugins:
+- search
+- mkdocstrings
+
+markdown_extensions:
+  - attr_list
+
+theme:
+  name: material
+  features:
+    - announce.dismiss
+    # - content.action.edit
+    # - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    # - toc.integrate
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: lime
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: green
+      accent: lime
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  logo: "assets/images/logo.png"
+  favicon: "assets/images/icon.png"
+  font: false
+
+watch:
+  - ../modelgenerator/
