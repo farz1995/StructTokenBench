@@ -1,1 +1,0 @@
-Make sure to use a separate torch drug environment for this! Bypasses clunky torch-geometric installs.
