@@ -1,7 +1,7 @@
 accelerator: "gpu"
 num_nodes: 1
 check_val_every_n_epoch: 1
-default_root_dir: null # required
+default_root_dir: ${hydra:runtime.cwd}/struct_token_bench_logs
 enable_checkpointing: true
 enable_model_summary: true
 enable_progress_bar: true
@@ -18,3 +18,4 @@ reload_dataloaders_every_n_epochs: 1 #fine for mmap arrow files
 val_check_interval: 1.0 #leave null, will be set to occur 1 step before checkpointing
 accumulate_grad_batches: 1
 deterministic: true
+fast_dev_run: false

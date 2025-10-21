@@ -151,6 +151,31 @@ class BaseDataset(Dataset):
     
             self.py_logger.info(f"reduce sequence lengths for TAPE Homo to {len(self.data)}")
     
+    def shard(self, shard_idx: int, num_shards: int):
+        """
+        Shard the dataset across multiple processes.
+        Subsets self.data to only include samples for this shard.
+        """
+        if num_shards <= 1:
+            return  # no sharding needed
+
+        total_samples = len(self.data)
+        samples_per_shard = total_samples // num_shards
+        remainder = total_samples % num_shards
+
+        # Calculate start and end indices for this shard
+        start_idx = shard_idx * samples_per_shard + min(shard_idx, remainder)
+        end_idx = start_idx + samples_per_shard + (1 if shard_idx < remainder else 0)
+
+        self.data = self.data[start_idx:end_idx]
+
+        # Log the sharding if possible
+        try:
+            self.py_logger.info(f"Sharded dataset: shard {shard_idx}/{num_shards}, "
+                               f"samples {start_idx} to {end_idx-1} (total {len(self.data)})")
+        except Exception:
+            pass
+
     def get_target_file_name(self,):
         assert NotImplementedError
 
@@ -160,7 +185,8 @@ class BaseDataset(Dataset):
         self.py_logger.info(f"Save the processed, structured data to disk: {file}")
     
     def prepare_structure_loading(self):
-        assert NotImplementedError
+        # default no-op; datasets can override if they need special preprocessing
+        return None
 
     def collate_fn(self, batch):
         """
@@ -315,12 +341,14 @@ class BaseDataset(Dataset):
     
     def get_pdb_chain(self, pdb_id, chain_id):
         try:
-            # Support both forms:
+            # Support multiple layouts:
             #  - PDB_DATA_DIR=/.../pdb_data/
             #  - PDB_DATA_DIR=/.../pdb_data/mmcif_files/
+            #  - PDB_DATA_DIR=/.../pdb_data/mmcif_files/ (containing nested mmcif_files/)
+            cand3 = os.path.join(self.PDB_DATA_DIR, "mmcif_files", "mmcif_files", f"{pdb_id}.cif")
             cand1 = os.path.join(self.PDB_DATA_DIR, "mmcif_files", f"{pdb_id}.cif")
             cand2 = os.path.join(self.PDB_DATA_DIR, f"{pdb_id}.cif")
-            file = cand1 if os.path.exists(cand1) else cand2
+            file = next((c for c in (cand3, cand1, cand2) if os.path.exists(c)), cand1)
             protein_chain = WrappedProteinChain.from_cif(
                 file, chain_id=chain_id, id=pdb_id
             )
@@ -431,8 +459,16 @@ class BaseDataset(Dataset):
     
     def retrieve_pdb_path(self, pdb_id, chain_id):
         # specifically defined for ATLAS, PretrainPDB, CASP14 and CAMEO
-        file = os.path.join(self.PDB_DATA_DIR, f"mmcif_files/{pdb_id}.cif")
-        return file
+        # Support base pointing to either the dataset root or the mmcif directory,
+        # and handle a nested "mmcif_files/mmcif_files" layout.
+        cand3 = os.path.join(self.PDB_DATA_DIR, "mmcif_files", "mmcif_files", f"{pdb_id}.cif")
+        cand1 = os.path.join(self.PDB_DATA_DIR, "mmcif_files", f"{pdb_id}.cif")
+        cand2 = os.path.join(self.PDB_DATA_DIR, f"{pdb_id}.cif")
+        for c in (cand3, cand1, cand2):
+            if os.path.exists(c):
+                return c
+        # Fallback to a reasonable default path for error messaging
+        return cand1 if os.path.isdir(os.path.join(self.PDB_DATA_DIR, "mmcif_files")) else cand2
     
     def _get_item_structural_tokens(self, index, skip_check=False):
         
@@ -613,3 +649,88 @@ class BaseDataset(Dataset):
         
     def additional_preprocessing_for_TAPE_homo(self, tokenizer_name):
         pass
+
+    def splitting_dataset(
+        self,
+        fold_split_ratio: float = 0.2,
+        fold_valid_ratio: float = 0.1,
+        superfamily_split_ratio: float = 0.2,
+        superfamily_valid_ratio: float = 0.1,
+    ):
+        """
+        Create four splits: train, validation, fold_test, superfamily_test.
+        - fold_test holds out a fraction of entire fold_label classes
+        - superfamily_test holds out a fraction of entire superfamily_label classes
+        - train/validation come from the remaining pool (excluding both test sets)
+          using a per-sample split (stratified by fold_label when possible).
+
+        Notes:
+        - superfamily_valid_ratio is accepted for API compatibility but not used
+          separately (we keep a single validation set).
+        - Deterministic behavior with a fixed seed for reproducibility.
+        """
+        rng = np.random.RandomState(0)
+        data = self.data
+
+        # Collect label arrays
+        folds = [int(x["fold_label"]) for x in data if "fold_label" in x]
+        superfams = [int(x["superfamily_label"]) for x in data if "superfamily_label" in x]
+        assert len(folds) == len(data) and len(superfams) == len(data), (
+            "Each sample must have 'fold_label' and 'superfamily_label' before splitting"
+        )
+
+        # Choose held-out folds
+        unique_folds = np.array(sorted(set(folds)))
+        rng.shuffle(unique_folds)
+        n_hold_folds = max(1, int(round(fold_split_ratio * len(unique_folds)))) if len(unique_folds) > 0 else 0
+        heldout_folds = set(unique_folds[:n_hold_folds])
+
+        # Choose held-out superfams
+        unique_sf = np.array(sorted(set(superfams)))
+        rng.shuffle(unique_sf)
+        n_hold_sf = max(1, int(round(superfamily_split_ratio * len(unique_sf)))) if len(unique_sf) > 0 else 0
+        heldout_sf = set(unique_sf[:n_hold_sf])
+
+        # Indices for each split
+        idx_all = np.arange(len(data))
+        idx_fold_test = [i for i in idx_all if folds[i] in heldout_folds]
+        idx_sf_test = [i for i in idx_all if superfams[i] in heldout_sf]
+        heldout_any = set(idx_fold_test) | set(idx_sf_test)
+        pool = [i for i in idx_all if i not in heldout_any]
+
+        # Train/Val split from pool (stratify by fold when possible)
+        if len(pool) == 0:
+            train_idx, val_idx = [], []
+        elif len(pool) == 1 or fold_valid_ratio <= 0:
+            train_idx, val_idx = pool, []
+        else:
+            y_fold = [folds[i] for i in pool]
+            try:
+                train_idx, val_idx = train_test_split(
+                    pool,
+                    test_size=min(max(fold_valid_ratio, 0.0), 0.9),
+                    random_state=0,
+                    stratify=y_fold if len(set(y_fold)) > 1 else None,
+                )
+            except Exception:
+                # fallback: no stratification
+                train_idx, val_idx = train_test_split(
+                    pool, test_size=min(max(fold_valid_ratio, 0.0), 0.9), random_state=0
+                )
+
+        # Materialize splits
+        train = [data[i] for i in train_idx]
+        valid = [data[i] for i in val_idx]
+        fold_test = [data[i] for i in idx_fold_test]
+        superfamily_test = [data[i] for i in idx_sf_test]
+
+        # Basic logging if possible
+        try:
+            self.py_logger.info(
+                f"Split sizes -> train={len(train)}, valid={len(valid)}, "
+                f"fold_test={len(fold_test)}, superfamily_test={len(superfamily_test)}"
+            )
+        except Exception:
+            pass
+
+        return [train, valid, fold_test, superfamily_test]

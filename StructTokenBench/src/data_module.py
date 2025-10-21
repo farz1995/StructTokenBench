@@ -76,7 +76,7 @@ def _apply_45class_filter_and_remap(self, dataset, split):
         if mapping_path:
             mapping_path = os.path.join(mapping_path, "fold45_map.pt")
         if mapping_path and os.path.isfile(mapping_path):
-            obj = torch.load(mapping_path, map_location="cpu")
+            obj = torch.load(mapping_path, map_location="cpu", weights_only=False)
             keep_set = set(obj["keep"])
             remap = obj["map"]
             self._label_keep_set, self._label_remap = keep_set, remap

@@ -185,6 +185,46 @@ def main(cfg):
     )
 
     # ------------------- Train / Validate flow -------------------
+    def _pretty_log_results(results, header="validation"):
+        """Log metrics returned by trainer.validate/test in a readable way."""
+        try:
+            import torch
+        except Exception:
+            torch = None
+
+        if results is None:
+            logger.info(f"No {header} results returned.")
+            return
+
+        # Lightning returns a list[dict]
+        if isinstance(results, dict):
+            results = [results]
+
+        merged = {}
+        for d in results or []:
+            if not isinstance(d, dict):
+                continue
+            merged.update(d)
+
+        if not merged:
+            logger.info(f"No {header} metrics to display.")
+            return
+
+        # Convert tensors to scalars
+        flat = {}
+        for k, v in merged.items():
+            val = v
+            if torch is not None and isinstance(v, torch.Tensor):
+                if v.numel() == 1:
+                    val = v.item()
+                else:
+                    val = float(v.detach().float().mean().item())
+            flat[k] = val
+
+        # Stable order: split metrics first
+        ordered = sorted(flat.items(), key=lambda kv: kv[0])
+        msg = ", ".join([f"{k}={v}" for k, v in ordered])
+        logger.info(f"Final {header} metrics -> {msg}")
     if not getattr(cfg, "validate_only", False) and not getattr(cfg, "test_only", False):
         logger.info("*********** start training ***********\n")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.model.ckpt_path)
@@ -197,10 +237,25 @@ def main(cfg):
         if torch.distributed.is_initialized():
             torch.distributed.barrier()
 
-        trainer.validate(model=model, datamodule=datamodule, ckpt_path="best")
+        # In fast_dev_run, Lightning forbids ckpt_path="best". Fallback to in-memory weights.
+        ckpt_for_val = None
+        if not getattr(trainer, "fast_dev_run", False):
+            try:
+                cb = getattr(trainer, "checkpoint_callback", None)
+                # Prefer explicit best-model path if available; otherwise allow "best" alias.
+                if cb is not None and getattr(cb, "best_model_path", None):
+                    ckpt_for_val = cb.best_model_path
+                else:
+                    ckpt_for_val = "best"
+            except Exception:
+                ckpt_for_val = None
+
+        val_results = trainer.validate(model=model, datamodule=datamodule, ckpt_path=ckpt_for_val)
+        _pretty_log_results(val_results, header="validation")
     else:
         logger.info("*********** start validation ***********\n")
-        trainer.validate(model=model, datamodule=datamodule, ckpt_path=cfg.model.ckpt_path)
+        val_results = trainer.validate(model=model, datamodule=datamodule, ckpt_path=cfg.model.ckpt_path)
+        _pretty_log_results(val_results, header="validation")
 
 
 if __name__ == "__main__":

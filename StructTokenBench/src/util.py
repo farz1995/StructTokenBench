@@ -179,8 +179,16 @@ def setup_loggings(cfg):
         f"and {torch.cuda.device_count()} devices per-node"
     )
 
-    # set save directory path
-    cfg.save_dir_path = os.path.join(cfg.trainer.default_root_dir, cfg.run_name)
+    # set save directory path safely
+    root = getattr(cfg.trainer, "default_root_dir", None)
+    if root is None or str(root).strip() == "" or str(root).lower() == "none":
+        root = os.path.join(os.getcwd(), "struct_token_bench_logs")
+    try:
+        os.makedirs(root, exist_ok=True)
+    except Exception:
+        pass
+    run_name = getattr(cfg, "run_name", "run")
+    cfg.save_dir_path = os.path.join(str(root), str(run_name))
 
     return logger
 

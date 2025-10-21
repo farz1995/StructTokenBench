@@ -87,8 +87,9 @@ class BioLIP2FunctionDataset(BaseDataset):
             self.filter_rare_ligand()
             torch.save(self.data, all_data_file)
         else:
-            self.data = torch.load(all_data_file)
-        
+            # Explicitly disable weights_only for PyTorch>=2.6 when loading non-state-dict objects
+            self.data = torch.load(all_data_file, map_location="cpu", weights_only=False)
+
         # filter out entries without all four target labels
         self.filter_missing_labels()
         
